@@ -1,2 +1,4 @@
 .env
 voitto.db
+
+__pycache__/

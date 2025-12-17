@@ -39,6 +39,7 @@ class PlayerGameStats(SQLModel, table=True):
     Source: Scraped Box Scores (e.g. Basketball Reference)
     """
     id: int | None = Field(default=None, primary_key=True)
+    source_game_id: str  # e.g. "202310230LAL"
     game_date: datetime # To help match with odds
     player_name: str    # The join key (needs to be normalized later)
     team: str

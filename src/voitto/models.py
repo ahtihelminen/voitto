@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import Field, SQLModel
 
@@ -29,23 +29,29 @@ class PlayerPropOdds(SQLModel, table=True):
     odds_over: float     # e.g. 1.90
     odds_under: float    # e.g. 1.90
     
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)  # noqa: UP017
+    )
 
 class PlayerGameStats(SQLModel, table=True):
     """
-    The 'Features' & 'Labels' for training.
-    We will scrape this later from a stats site.
+    The 'Ground Truth' results from the game.
+    Source: Scraped Box Scores (e.g. Basketball Reference)
     """
     id: int | None = Field(default=None, primary_key=True)
-    game_id: str = Field(foreign_key="game.id")
-    player_name: str
+    source_game_id: str  # e.g. "202310230LAL"
+    game_date: datetime # To help match with odds
+    player_name: str    # The join key (needs to be normalized later)
     team: str
     
-    # The raw stats (Labels)
+    # The Actuals
     points: int
     rebounds: int
     assists: int
-    threes_made: int
-    minutes: str         # e.g. "34:12"
     
-    # We can add more advanced features (Usage %, PER) here later
+    # Meta
+    source: str = "basketball_reference"
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)  # noqa: UP017
+    )
+

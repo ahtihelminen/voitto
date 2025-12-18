@@ -5,7 +5,7 @@ from nba_api.stats.endpoints import playergamelogs
 
 # --- Configuration ---
 SEASONS = ["2024-25", "2023-24", "2022-23", "2021-22"]  # Add more as needed
-OUTPUT_FILE = ".data/nba_historical_player_stats.csv"
+OUTPUT_FILE = "./data/nba_historical_player_stats.csv"
 
 
 def fetch_season_stats(season_str: str) -> pd.DataFrame:

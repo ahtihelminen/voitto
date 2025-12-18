@@ -52,4 +52,5 @@ select = [
 ignore = [
 	"COM812",
 	"INP001",
+	"UP017",
 ]

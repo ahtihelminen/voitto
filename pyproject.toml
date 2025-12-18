@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "beautifulsoup4>=4.14.3",
+    "nba-api>=1.11.3",
     "pandas>=2.3.3",
     "python-dotenv>=1.2.1",
     "requests>=2.32.5",
@@ -50,4 +51,5 @@ select = [
 ]
 ignore = [
 	"COM812",
+	"INP001",
 ]

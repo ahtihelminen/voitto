@@ -3,6 +3,15 @@ from typing import Any
 
 from sqlmodel import Session, SQLModel, create_engine
 
+# Import all models so SQLModel knows about them when creating tables
+from voitto.models import (  # noqa: F401
+    GameOdds,
+    GameStats,
+    PlayerPropOdds,
+    PlayerStats,
+    Unified,
+)
+
 # This creates a file named 'voitto.db' in the same directory
 sqlite_file_name = "voitto.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"

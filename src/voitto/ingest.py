@@ -8,7 +8,8 @@ from requests.exceptions import RequestException
 from sqlmodel import Session, desc, select
 
 from voitto.database import create_db_and_tables, engine
-from voitto.models import Game, PlayerPropOdds
+from voitto.models import GameOdds, PlayerPropOdds
+from voitto.teams import NAME_TO_ABBREVIATION_DICT
 
 # 1. Setup
 load_dotenv()
@@ -16,6 +17,7 @@ API_KEY = os.getenv("ODDS_API_KEY")
 SPORT = "basketball_nba"
 REGIONS = "eu"
 MARKETS = "player_points,player_rebounds,player_assists"
+BOOKERS = "pinnacle"
 
 def get_request(url: str, params: dict) -> dict | None:
     """Helper to handle requests with error checking."""
@@ -53,13 +55,13 @@ def ingest_data() -> None:
         # Save Games to DB
         games_to_process = []
         for event in events:
-            existing_game = session.get(Game, event["id"])
+            existing_game = session.get(GameOdds, event["id"])
             if not existing_game:
-                game = Game(
+                game = GameOdds(
                     id=event["id"],
                     sport_key=event["sport_key"],
-                    home_team=event["home_team"],
-                    away_team=event["away_team"],
+                    home_team=NAME_TO_ABBREVIATION_DICT[event["home_team"]],
+                    away_team=NAME_TO_ABBREVIATION_DICT[event["away_team"]],
                     commence_time=datetime.fromisoformat(
                         event["commence_time"].replace("Z", "+00:00")  # noqa: FURB162
                     ),
@@ -85,6 +87,7 @@ def ingest_data() -> None:
                     "api_key": API_KEY,
                     "regions": REGIONS,
                     "markets": MARKETS,
+                    "bookmakers": BOOKERS,
                     "oddsFormat": "decimal",
                 }
             )

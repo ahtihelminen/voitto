@@ -112,21 +112,26 @@ def ingest_data() -> None:
                     
                     for outcome in market["outcomes"]:
                         player = outcome["description"]
-                        point = outcome.get("point")
+                        market_line = outcome.get("point")
                         label = outcome["name"] # "Over" or "Under"
                         price = outcome.get("price")
                         
-                        if (player, point) not in grouped_outcomes:
-                            grouped_outcomes[(player, point)] = {
+                        if (player, market_line) not in grouped_outcomes:
+                            grouped_outcomes[(player, market_line)] = {
                                 "Over": 0,
                                 "Under": 0
                             }
                         
                         if label in ["Over", "Under"]:
-                            grouped_outcomes[(player, point)][label] = price
+                            grouped_outcomes[
+                                (player, market_line)
+                            ][label] = price
 
                     # Create DB records from grouped data
-                    for (player, point), prices in grouped_outcomes.items():
+                    for (
+                        player,
+                        market_line
+                    ), prices in grouped_outcomes.items():
                         # CHECK: Fetch latest odds for this specific line
                         statement = (
                             select(PlayerPropOdds)
@@ -134,7 +139,7 @@ def ingest_data() -> None:
                             .where(PlayerPropOdds.bookmaker == bm_name)
                             .where(PlayerPropOdds.player_name == player)
                             .where(PlayerPropOdds.market_key == market_key)
-                            .where(PlayerPropOdds.point == point)
+                            .where(PlayerPropOdds.market_line == market_line)
                             .order_by(desc(PlayerPropOdds.timestamp))
                             .limit(1)
                         )
@@ -150,7 +155,7 @@ def ingest_data() -> None:
                                 bookmaker=bm_name,
                                 player_name=player,
                                 market_key=market_key,
-                                point=point,
+                                market_line=market_line,
                                 odds_over=prices["Over"],
                                 odds_under=prices["Under"],
                             )

@@ -35,8 +35,7 @@ class PlayerPropOdds(SQLModel, table=True):
     player_name: str     # e.g. "LeBron James"
     market_key: str      # e.g. "player_points"
     
-    # The Line (The Target)
-    point: float         # e.g. 24.5
+    market_line: float         # e.g. 24.5
     
     # The Prices
     odds_over: float     # e.g. 1.90
@@ -47,31 +46,50 @@ class PlayerPropOdds(SQLModel, table=True):
     )
 
 class PlayerStats(SQLModel, table=True):
-    """
-    The 'Ground Truth' results from the game.
-    Source: NBA API
-    """
+    """Full Box Score from NBA API."""
     id: int | None = Field(default=None, primary_key=True)
-    source_game_id: str  # NBA API Game ID (e.g., "0022300123")
+    source_game_id: str = Field(foreign_key="game_stats.id")
     game_date: datetime 
     player_name: str    
-    team: str           # e.g. "LAL"
+    team: str
     
-    # The Actuals
-    points: int
-    rebounds: int
+    # --- Game Context ---
+    wl: str | None     # "W" or "L"
+    minutes: float     # "MIN"
+    plus_minus: int    # "PLUS_MINUS"
+    
+    # --- Shooting ---
+    fgm: int; fga: int; fg_pct: float  # noqa: E702
+    fg3m: int; fg3a: int; fg3_pct: float  # noqa: E702
+    ftm: int; fta: int; ft_pct: float  # noqa: E702
+    
+    # --- Rebounding ---
+    oreb: int; dreb: int; rebounds: int  # noqa: E702
+    
+    # --- Playmaking & Turnover ---
     assists: int
-    steals: int         
-    blocks: int         
-    threes: int         
-    turnovers: int      
-    minutes: float
+    turnovers: int
     
-    # Meta
+    # --- Defense ---
+    steals: int
+    blocks: int
+    blka: int          # "BLKA" (Blocked Attempts - shots blocked by opponent)
+    
+    # --- Fouls ---
+    fouls: int         # "PF"
+    fouls_drawn: int   # "PFD"
+    
+    # --- Scoring & Misc ---
+    points: int
+    nba_fantasy_pts: float
+    dd2: int           # Double-Doubles
+    td3: int           # Triple-Doubles
+
     source: str = "nba_api"
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+
 
 class Unified(SQLModel, table=True):
     """
@@ -84,24 +102,44 @@ class Unified(SQLModel, table=True):
     bookmaker: str
     player_name: str
     market_key: str
-    point: float
+    market_line: float
     odds_over: float
     odds_under: float
     
-    # Actuals
-    points: int
-    rebounds: int
+     # --- Game Context ---
+    wl: str | None     # "W" or "L"
+    minutes: float     # "MIN"
+    plus_minus: int    # "PLUS_MINUS"
+    
+    # --- Shooting ---
+    fgm: int; fga: int; fg_pct: float  # noqa: E702
+    fg3m: int; fg3a: int; fg3_pct: float  # noqa: E702
+    ftm: int; fta: int; ft_pct: float  # noqa: E702
+    
+    # --- Rebounding ---
+    oreb: int; dreb: int; rebounds: int  # noqa: E702
+    
+    # --- Playmaking & Turnover ---
     assists: int
+    turnovers: int
+    
+    # --- Defense ---
     steals: int
     blocks: int
-    threes: int
-    turnovers: int
-    minutes: float
+    blka: int          # "BLKA" (Blocked Attempts - shots blocked by opponent)
     
-    timestamp: datetime = Field(
+    # --- Fouls ---
+    fouls: int         # "PF"
+    fouls_drawn: int   # "PFD"
+    
+    # --- Scoring & Misc ---
+    points: int
+    nba_fantasy_pts: float
+    dd2: int           # Double-Doubles
+    td3: int           # Triple-Doubles
+
+    created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-
-
 
     

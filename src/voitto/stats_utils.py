@@ -45,21 +45,44 @@ def save_stats_to_db(session: Session, stats: pd.DataFrame) -> None:
         # Check if (GameID, PlayerName) tuple exists in our set
         if (str(row['GAME_ID']), row['PLAYER_NAME']) in existing_records:
             continue
-
         # Create Object
         stats_record = PlayerStats(
             source_game_id=str(row['GAME_ID']),
             game_date=datetime.strptime(row['GAME_DATE'], "%Y-%m-%d"),
             player_name=row['PLAYER_NAME'],
             team=row['TEAM_ABBREVIATION'],
-            points=row['PTS'],
-            rebounds=row['REB'],
+            
+            # Context
+            wl=row.get('WL'),
+            minutes=float(row['MIN'] or 0),
+            plus_minus=int(row['PLUS_MINUS'] or 0),
+            
+            # Shooting
+            fgm=row['FGM'], fga=row['FGA'], fg_pct=row['FG_PCT'],
+            fg3m=row['FG3M'], fg3a=row['FG3A'], fg3_pct=row['FG3_PCT'],
+            ftm=row['FTM'], fta=row['FTA'], ft_pct=row['FT_PCT'],
+            
+            # Rebounding
+            oreb=row['OREB'], dreb=row['DREB'], rebounds=row['REB'],
+            
+            # Playmaking
             assists=row['AST'],
+            turnovers=row['TOV'],
+            
+            # Defense
             steals=row['STL'],
             blocks=row['BLK'],
-            threes=row['FG3M'],
-            turnovers=row['TOV'],
-            minutes=float(row['MIN'])
+            blka=row['BLKA'],
+            
+            # Fouls
+            fouls=row['PF'],
+            fouls_drawn=row['PFD'],
+            
+            # Scoring/Misc
+            points=row['PTS'],
+            nba_fantasy_pts=row['NBA_FANTASY_PTS'],
+            dd2=row.get('DD2', 0),
+            td3=row.get('TD3', 0)
         )
         new_records.append(stats_record)
 

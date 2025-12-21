@@ -8,7 +8,8 @@ from requests.exceptions import RequestException
 from sqlmodel import Session, desc, select
 
 from voitto.database import create_db_and_tables, engine
-from voitto.models import Game, PlayerPropOdds
+from voitto.models import GameOdds, PlayerPropOdds
+from voitto.teams import NAME_TO_ABBREVIATION_DICT
 
 # 1. Setup
 load_dotenv()
@@ -16,12 +17,17 @@ API_KEY = os.getenv("ODDS_API_KEY")
 SPORT = "basketball_nba"
 REGIONS = "eu"
 MARKETS = "player_points,player_rebounds,player_assists"
+BOOKERS = "pinnacle"
 
 def get_request(url: str, params: dict) -> dict | None:
     """Helper to handle requests with error checking."""
     try:
         response = requests.get(url, params=params, timeout=10)
-        
+
+        remaining = response.headers.get("x-requests-remaining")
+        used = response.headers.get("x-requests-used")
+        print(f"   [API Quota] Used: {used} | Remaining: {remaining}")
+
         # Handle Quota/Auth errors (401) or Throttling (429)
         if response.status_code in [401, 429]:
             print(f"!!! API Limit/Auth Error {response.status_code}:",
@@ -53,13 +59,13 @@ def ingest_data() -> None:
         # Save Games to DB
         games_to_process = []
         for event in events:
-            existing_game = session.get(Game, event["id"])
+            existing_game = session.get(GameOdds, event["id"])
             if not existing_game:
-                game = Game(
+                game = GameOdds(
                     id=event["id"],
                     sport_key=event["sport_key"],
-                    home_team=event["home_team"],
-                    away_team=event["away_team"],
+                    home_team=NAME_TO_ABBREVIATION_DICT[event["home_team"]],
+                    away_team=NAME_TO_ABBREVIATION_DICT[event["away_team"]],
                     commence_time=datetime.fromisoformat(
                         event["commence_time"].replace("Z", "+00:00")  # noqa: FURB162
                     ),
@@ -85,6 +91,7 @@ def ingest_data() -> None:
                     "api_key": API_KEY,
                     "regions": REGIONS,
                     "markets": MARKETS,
+                    "bookmakers": BOOKERS,
                     "oddsFormat": "decimal",
                 }
             )
@@ -105,21 +112,26 @@ def ingest_data() -> None:
                     
                     for outcome in market["outcomes"]:
                         player = outcome["description"]
-                        point = outcome.get("point")
+                        market_line = outcome.get("point")
                         label = outcome["name"] # "Over" or "Under"
                         price = outcome.get("price")
                         
-                        if (player, point) not in grouped_outcomes:
-                            grouped_outcomes[(player, point)] = {
+                        if (player, market_line) not in grouped_outcomes:
+                            grouped_outcomes[(player, market_line)] = {
                                 "Over": 0,
                                 "Under": 0
                             }
                         
                         if label in ["Over", "Under"]:
-                            grouped_outcomes[(player, point)][label] = price
+                            grouped_outcomes[
+                                (player, market_line)
+                            ][label] = price
 
                     # Create DB records from grouped data
-                    for (player, point), prices in grouped_outcomes.items():
+                    for (
+                        player,
+                        market_line
+                    ), prices in grouped_outcomes.items():
                         # CHECK: Fetch latest odds for this specific line
                         statement = (
                             select(PlayerPropOdds)
@@ -127,7 +139,7 @@ def ingest_data() -> None:
                             .where(PlayerPropOdds.bookmaker == bm_name)
                             .where(PlayerPropOdds.player_name == player)
                             .where(PlayerPropOdds.market_key == market_key)
-                            .where(PlayerPropOdds.point == point)
+                            .where(PlayerPropOdds.market_line == market_line)
                             .order_by(desc(PlayerPropOdds.timestamp))
                             .limit(1)
                         )
@@ -143,7 +155,7 @@ def ingest_data() -> None:
                                 bookmaker=bm_name,
                                 player_name=player,
                                 market_key=market_key,
-                                point=point,
+                                market_line=market_line,
                                 odds_over=prices["Over"],
                                 odds_under=prices["Under"],
                             )

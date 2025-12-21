@@ -4,8 +4,10 @@ from sqlmodel import Session, create_engine, select
 
 from voitto.models import (  # Assuming you have a models.py file
     GameOdds,
-    PlayerGameStats,
+    GameStats,
     PlayerPropOdds,
+    PlayerStats,
+    Unified,
 )
 
 # Set up database connection
@@ -17,18 +19,26 @@ st.title("Voitto: Sports Prediction Dashboard")
 # Display recent entries
 st.subheader("Latest Database Updates")
 with Session(engine) as session:
-    get_games = select(
+    get_games_odds = select(
         GameOdds
     ).order_by(
         GameOdds.id.desc() # type: ignore
     ).limit(100)
-    games = session.exec(get_games).all()
-    games_df = pd.DataFrame([row.model_dump() for row in games])
+    games_odds = session.exec(get_games_odds).all()
+    games_odds_df = pd.DataFrame([row.model_dump() for row in games_odds])
+
+    get_games_stats = select(
+        GameStats
+    ).order_by(
+        GameStats.id.desc() # type: ignore
+    ).limit(100)
+    games_stats = session.exec(get_games_stats).all()
+    games_stats_df = pd.DataFrame([row.model_dump() for row in games_stats])
 
     get_stats = select(
-        PlayerGameStats
+        PlayerStats
     ).order_by(
-        PlayerGameStats.game_date.asc() # type: ignore
+        PlayerStats.game_date.asc() # type: ignore
     ).limit(100)
     stats = session.exec(get_stats).all()
     stats_df = pd.DataFrame([row.model_dump() for row in stats])
@@ -41,10 +51,25 @@ with Session(engine) as session:
     odds = session.exec(get_odds).all()
     odds_df = pd.DataFrame([row.model_dump() for row in odds])
     
+    get_unified = select(
+        Unified
+    ).order_by(
+        Unified.id.desc() # type: ignore
+    ).limit(100)
+    unified = session.exec(get_unified).all()
+    unified_df = pd.DataFrame([row.model_dump() for row in unified])
 
-    st.dataframe(games_df)
+    st.subheader("Recent Unified Records")
+    st.dataframe(unified_df)
+    st.subheader("Recent Games (odds)")
+    st.dataframe(games_odds_df)
+    st.subheader("Recent Games (stats)")
+    st.dataframe(games_stats_df)
+    st.subheader("Recent Player Stats")
     st.dataframe(stats_df)
+    st.subheader("Recent Player Odds")
     st.dataframe(odds_df)
+
 
 
 # Prediction vs Market logic

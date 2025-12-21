@@ -23,7 +23,11 @@ def get_request(url: str, params: dict) -> dict | None:
     """Helper to handle requests with error checking."""
     try:
         response = requests.get(url, params=params, timeout=10)
-        
+
+        remaining = response.headers.get("x-requests-remaining")
+        used = response.headers.get("x-requests-used")
+        print(f"   [API Quota] Used: {used} | Remaining: {remaining}")
+
         # Handle Quota/Auth errors (401) or Throttling (429)
         if response.status_code in [401, 429]:
             print(f"!!! API Limit/Auth Error {response.status_code}:",

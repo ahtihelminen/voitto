@@ -6,7 +6,7 @@ from voitto.stats_utils import fetch_season_logs, save_stats_to_db
 
 # --- Config ---
 DATABASE_URL = "sqlite:///voitto.db"
-SEASONS = ["2023-24", "2022-23", "2021-22"]
+SEASONS = ["2025-26","2024-25","2023-24"]
 
 def main() -> None:
     engine = create_engine(DATABASE_URL)

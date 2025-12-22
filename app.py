@@ -31,7 +31,7 @@ with Session(engine) as session:
         GameStats
     ).order_by(
         GameStats.id.desc() # type: ignore
-    ).limit(100)
+    )
     games_stats = session.exec(get_games_stats).all()
     games_stats_df = pd.DataFrame([row.model_dump() for row in games_stats])
 
@@ -39,7 +39,7 @@ with Session(engine) as session:
         PlayerStats
     ).order_by(
         PlayerStats.game_date.asc() # type: ignore
-    ).limit(100)
+    )
     stats = session.exec(get_stats).all()
     stats_df = pd.DataFrame([row.model_dump() for row in stats])
 
@@ -47,7 +47,7 @@ with Session(engine) as session:
         PlayerPropOdds
     ).order_by(
         PlayerPropOdds.id.desc() # type: ignore
-    ).limit(100)
+    )
     odds = session.exec(get_odds).all()
     odds_df = pd.DataFrame([row.model_dump() for row in odds])
     
@@ -55,7 +55,7 @@ with Session(engine) as session:
         Unified
     ).order_by(
         Unified.id.desc() # type: ignore
-    ).limit(100)
+    )
     unified = session.exec(get_unified).all()
     unified_df = pd.DataFrame([row.model_dump() for row in unified])
 

@@ -2,7 +2,11 @@ import time
 
 from sqlmodel import Session, create_engine
 
-from voitto.stats_utils import fetch_season_logs, save_stats_to_db
+from voitto.stats_utils import (
+    fetch_season_logs,
+    save_nba_games_to_db,
+    save_stats_to_db,
+)
 
 # --- Config ---
 DATABASE_URL = "sqlite:///voitto.db"
@@ -16,6 +20,7 @@ def main() -> None:
             print(f"Processing {season}...")
             # Let errors propagate if fetch fails
             season_stats = fetch_season_logs(season)
+            save_nba_games_to_db(session, season_stats)
             save_stats_to_db(session, season_stats)
             
             # Polite API pause

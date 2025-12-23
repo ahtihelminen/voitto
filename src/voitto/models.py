@@ -138,6 +138,9 @@ class Unified(SQLModel, table=True):
     dd2: int           # Double-Doubles
     td3: int           # Triple-Doubles
 
+    player_team: str | None = Field(default=None)
+    opponent_team: str | None = Field(default=None)
+
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )

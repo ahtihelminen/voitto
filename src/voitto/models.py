@@ -99,6 +99,7 @@ class Unified(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     odds_game_id: str = Field(foreign_key="game_odds.id")
     stats_game_id: str = Field(foreign_key="game_stats.id")
+    game_date: datetime | None = Field(default=None)
     bookmaker: str
     player_name: str
     market_key: str

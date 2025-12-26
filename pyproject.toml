@@ -5,6 +5,8 @@ description = "Python app for development of sports prediction models"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "arviz>=0.23.0",
+    "bambi>=0.15.0",
     "beautifulsoup4>=4.14.3",
     "nba-api>=1.11.3",
     "pandas>=2.3.3",

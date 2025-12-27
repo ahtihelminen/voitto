@@ -146,4 +146,33 @@ class Unified(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc)
     )
 
+class Experiment(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(unique=True) # e.g. "Gaussian_Residual_v1"
+    model_type: str # "gaussian_residual", "poisson_base"
+    recency_weight: float
+    training_cutoff: datetime
+    description: str = Field(default="")
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     
+    # We store the path to the "Base Priors" trace file
+    base_model_path: str # e.g. "saved_models/exp_1_base.nc"
+
+class DailyPrediction(SQLModel, table=True):
+    """Stores the specific prediction for a specific game & model."""
+    id: int | None = Field(default=None, primary_key=True)
+    experiment_id: int = Field(foreign_key="experiment.id")
+    player_name: str
+    game_date: datetime
+    
+    market_line: float
+    predicted_diff: float # The raw model output
+    final_prediction: float # The calculated point total
+    prob_over: float # Probability for Kelly Criterion
+    
+    # Did we bet on it? (Populated later by the simulator)
+    bet_placed: str | None # "Over", "Under", "Pass"
+    bet_amount: float | None
+    outcome: float | None # Profit/Loss
+

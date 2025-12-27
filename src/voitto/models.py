@@ -151,6 +151,9 @@ class Experiment(SQLModel, table=True):
     name: str = Field(unique=True) # e.g. "Gaussian_Residual_v1"
     model_type: str # "gaussian_residual", "poisson_base"
     recency_weight: float
+    training_cutoff: datetime
+    description: str = Field(default="")
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     # We store the path to the "Base Priors" trace file

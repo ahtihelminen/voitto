@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 from sqlmodel import Session, create_engine, select
 
-from voitto.engine.train import train_base_model
+from voitto.engine.train_bayes import train_base_model
 from voitto.models import Experiment, Unified
 
 # --- Config ---

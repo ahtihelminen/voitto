@@ -3,7 +3,7 @@ import bambi as bmb
 import pandas as pd
 
 # Re-use the extractor from your backtest_engine logic
-from voitto.engine.trainer import get_model_config
+from voitto.engine.train import get_model_config
 
 
 def extract_priors_from_trace(

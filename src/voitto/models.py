@@ -90,7 +90,6 @@ class PlayerStats(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc)
     )
 
-
 class Unified(SQLModel, table=True):
     """
     A unified view combining PlayerPropOdds and PlayerStats.
@@ -142,6 +141,13 @@ class Unified(SQLModel, table=True):
     player_team: str | None = Field(default=None)
     opponent_team: str | None = Field(default=None)
 
+    team_pace: float | None = Field(default=None)
+    team_efg_pct: float | None = Field(default=None)
+    team_rest_days: int | None = Field(default=None)
+
+    opp_def_rating: float | None = Field(default=None)
+    opp_pace: float | None = Field(default=None)
+
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
@@ -175,4 +181,32 @@ class DailyPrediction(SQLModel, table=True):
     bet_placed: str | None # "Over", "Under", "Pass"
     bet_amount: float | None
     outcome: float | None # Profit/Loss
+
+class TeamStats(SQLModel, table=True):
+    """
+    Stores advanced team metrics per game.
+    Source: nba_api LeagueDashTeamStats & LeagueGameFinder
+    """
+    id: int | None = Field(default=None, primary_key=True)
+    game_id: str = Field(index=True)
+    team_id: int = Field(index=True)
+    game_date: datetime
+    
+    # --- The Four Factors & Pace ---
+    pace: float           # PACE
+    efg_pct: float        # EFG_PCT
+    tov_pct: float        # TM_TOV_PCT
+    orb_pct: float        # OREB_PCT
+    ft_rate: float        # FTA_RATE
+    
+    # --- Defense ---
+    def_rating: float     # DEF_RATING
+    
+    # --- Context ---
+    rest_days: int | None = Field(default=None) # Calculated from schedule
+    is_home: bool = Field(default=False)
+
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 

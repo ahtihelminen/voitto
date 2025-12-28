@@ -1,6 +1,6 @@
 import sys
 
-import voitto.models
+import voitto.models as models
 from voitto.database import engine
 
 
@@ -13,7 +13,7 @@ def main() -> None:
     
     # 1. Get the class directly (Case-Sensitive)
     try:
-        model = getattr(voitto.models, model_name)
+        model = getattr(models, model_name)
     except AttributeError:
         print(f"Error: Model '{model_name}' not found in voitto.models.")
         print("Check casing (e.g., 'PlayerStats', not 'playerstats').")

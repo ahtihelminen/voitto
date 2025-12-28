@@ -5,14 +5,6 @@ from sqlmodel import Session, create_engine, select, text
 
 from voitto.models import Experiment
 
-# --- Page Config (Global) ---
-st.set_page_config(
-    page_title="Voitto Model Lab",
-    page_icon="🏀",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 # --- Constants ---
 SQLITE_URL = "sqlite:///voitto.db"
 MODELS_DIR = "saved_models"

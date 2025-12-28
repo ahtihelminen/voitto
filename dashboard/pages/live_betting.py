@@ -59,8 +59,8 @@ if st.button("🎲 Generate Bets", type="primary"):
             hist_stmt = select(Unified).where(
                 Unified.market_key == "player_points",
                 Unified.points is not None,
-                Unified.game_date >= season_start,
-                Unified.game_date < target_date,
+                Unified.game_date >= season_start, # type: ignore
+                Unified.game_date < target_date, # type: ignore
             )
             df_train = pd.DataFrame(
                 [row.model_dump() for row in session.exec(hist_stmt).all()]
@@ -75,7 +75,7 @@ if st.button("🎲 Generate Bets", type="primary"):
                     # Unified.game_date == target_date # Strict match
                     # For demo purposes, we might need a range if specific
                     # date has no games
-                    Unified.game_date >= target_date,
+                    Unified.game_date >= target_date, # type: ignore
                 )
                 .limit(50)
             )  # Safety limit

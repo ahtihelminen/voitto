@@ -6,3 +6,5 @@ __pycache__/
 explore_db.ipynb
 
 data/
+
+saved_models/

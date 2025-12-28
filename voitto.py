@@ -15,7 +15,7 @@ st.set_page_config(
 
 # --- Constants ---
 SQLITE_URL = "sqlite:///voitto.db"
-MODELS_DIR = "saved_models"
+MODELS_DIR = "./saved_models"
 
 # --- UI Header ---
 st.title("🏀 Voitto Model Lab")

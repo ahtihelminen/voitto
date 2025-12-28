@@ -8,7 +8,6 @@ from voitto.engine.bet import size_bets
 from voitto.engine.predict import predict_daily
 from voitto.models import Experiment, Unified
 
-st.set_page_config(page_title="Live Betting", page_icon="💰", layout="wide")
 SQLITE_URL = "sqlite:///voitto.db"
 engine = create_engine(SQLITE_URL)
 

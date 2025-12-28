@@ -9,7 +9,6 @@ from voitto.engine.train_xgb import train_xgboost_model
 from voitto.models import Experiment, Unified
 
 # --- Config ---
-st.set_page_config(page_title="Model Forge", page_icon="🧪", layout="wide")
 SQLITE_URL = "sqlite:///voitto.db"
 engine = create_engine(SQLITE_URL)
 

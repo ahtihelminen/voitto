@@ -5,6 +5,7 @@ import streamlit as st
 from sqlmodel import Session, create_engine, select
 
 from voitto.engine.train_bayes import train_base_model
+from voitto.engine.train_xgb import train_xgboost_model
 from voitto.models import Experiment, Unified
 
 # --- Config ---
@@ -26,7 +27,7 @@ with st.form("new_experiment_form"):
         )
         model_type = st.selectbox(
             "Model Architecture",
-            ["Gaussian Residual", "Poisson Base"]
+            ["Gaussian Residual", "Poisson Base", "XGBoost"]
         )
         
     with col2:
@@ -92,11 +93,19 @@ if submitted:
             "model_type": model_type,
             "experiment_name": exp_name
         }
-        save_path = train_base_model(
-            df_history,
-            config,
-            save_dir="saved_models"
-        )
+
+        if model_type == "XGBoost":
+            save_path = train_xgboost_model(
+                df_history,
+                config,
+                save_dir="saved_models"
+            )
+        else:
+            save_path = train_base_model(
+                df_history,
+                config,
+                save_dir="saved_models"
+            )
         
         # 3. Save to DB
         status.write("Saving metadata...")

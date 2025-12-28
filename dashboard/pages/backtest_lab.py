@@ -4,6 +4,7 @@ import streamlit as st
 from sqlmodel import Session, create_engine, select
 
 from voitto.engine.backtest import run_backtest
+from voitto.engine.train_xgb import run_xgboost_backtest
 from voitto.models import Experiment, Unified
 
 st.set_page_config(page_title="Backtest Lab", page_icon="📊", layout="wide")
@@ -59,7 +60,7 @@ if st.button("🚀 Run Walk-Forward Simulation", type="primary"):
                 Unified.points is not None,
                 Unified.game_date is not None,
             )
-            .order_by(Unified.game_date)
+            .order_by(Unified.game_date)  # type: ignore
         )
         results = session.exec(statement).all()
         df_full = pd.DataFrame([r.model_dump() for r in results])
@@ -77,8 +78,10 @@ if st.button("🚀 Run Walk-Forward Simulation", type="primary"):
         "retrain_days": retrain_days,
     }
 
-    results_df = run_backtest(df_full, config, progress_callback=update_ui)
-
+    if "XGBoost" in selected_exp.model_type:
+        results_df = run_xgboost_backtest(df_full, config, update_ui)
+    else:
+        results_df = run_backtest(df_full, config, update_ui)
     status_text.text("✅ Simulation Complete!")
     progress_bar.progress(100)
 
@@ -87,9 +90,7 @@ if st.button("🚀 Run Walk-Forward Simulation", type="primary"):
 
     # Calculate Error
     mae_model = results_df["error"].abs().mean()
-    mae_market = (
-        (results_df["points"] - results_df["market_line"]).abs().mean()
-    )
+    mae_market = (results_df["points"] - results_df["market_line"]).abs().mean()
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Model MAE", f"{mae_model:.4f}")
@@ -115,7 +116,34 @@ if st.button("🚀 Run Walk-Forward Simulation", type="primary"):
         y="cum_edge",
         title="Cumulative Points Saved vs Market",
     )
-    st.plotly_chart(fig, width='stretch')
+    st.plotly_chart(fig, width="stretch")
+
+    bets_df = results_df[results_df["bet_type"] != "No Bet"].copy()
+
+    if not bets_df.empty:
+        st.subheader("💰 Profitability Simulation (Unit Bets)")
+
+        # Calculate ROI
+        total_bets = len(bets_df)
+        total_profit = bets_df["bet_outcome"].sum()
+        roi = (total_profit / total_bets) * 100
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total Bets", f"{total_bets}")
+        c2.metric("Units Won", f"{total_profit:.2f}")
+        c3.metric("ROI", f"{roi:.2f}%", delta_color="normal")
+
+        # Plot Cumulative Profit
+        bets_df["cum_profit"] = bets_df["bet_outcome"].cumsum()
+        fig_profit = px.line(
+            bets_df,
+            x="game_date",
+            y="cum_profit",
+            title="Cumulative Units Won (@ -110 Odds)",
+        )
+        st.plotly_chart(fig_profit, width="stretch")
+    else:
+        st.warning("No bets placed with current confidence thresholds.")
 
     # Data View
     with st.expander("View Raw Predictions"):

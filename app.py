@@ -15,6 +15,11 @@ home = st.Page(
     icon="🏠",
     default=True,
 )
+data_explorer = st.Page(
+    "src/voitto/dashboard/data_explorer.py",
+    title="Data Explorer",
+    icon="📂",
+)
 model_forge = st.Page(
     "src/voitto/dashboard/model_forge.py",
     title="Model Forge",
@@ -31,5 +36,13 @@ live_betting = st.Page(
     icon="💰",
 )
 
-page = st.navigation([home, model_forge, backtest_lab, live_betting])
+page = st.navigation(
+    [
+        home,
+        data_explorer,
+        model_forge,
+        backtest_lab,
+        live_betting,
+    ]
+)
 page.run()

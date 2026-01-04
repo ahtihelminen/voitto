@@ -3,7 +3,7 @@ from pathlib import Path
 import streamlit as st
 from sqlmodel import Session, create_engine, select, text
 
-from voitto.models import Experiment
+from voitto.models import ModelArtifact
 
 # --- Constants ---
 SQLITE_URL = "sqlite:///voitto.db"
@@ -41,8 +41,8 @@ with col2:
     st.subheader("🚀 Workflow")
     st.markdown("""
     **1. 🧪 Model Forge**
-    Define new experiments and train base priors (23-25).
-    *Output: Saved .nc trace file*
+    Define new models and train components.
+    *Output: Saved model artifact*
     
     **2. 📊 Backtest Lab**
     Run walk-forward simulations on saved models.
@@ -58,8 +58,8 @@ with col3:
     # Placeholder for when tables exist
     with Session(engine) as session:
         # We wrap in try/except in case tables aren't created yet
-        exps = session.exec(select(Experiment)).all()
-        st.metric("Experiments", len(exps))
+        models = session.exec(select(ModelArtifact)).all()
+        st.metric("Models", len(models))
 
 # --- Footer ---
 st.divider()

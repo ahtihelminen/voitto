@@ -31,14 +31,14 @@ def train_base_model(
     
     Args:
         training_data: DataFrame containing historical games (23-24, etc.)
-        config: Dict containing 'model_type' and 'experiment_name'
+        config: Dict containing 'model_type' and 'model_name'
         save_dir: Directory to save the .nc file
     
     Returns:
         str: Path to the saved NetCDF file.
     """
     model_type = str(config["model_type"])
-    experiment_name = str(config.get("experiment_name", "experiment"))
+    model_name = str(config.get("model_name", "model"))
     
     # 1. Prepare Data
     training_df = training_data.copy()
@@ -61,7 +61,7 @@ def train_base_model(
     
     # 3. Save Trace
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    save_path = Path(save_dir) / f"{experiment_name}_base.nc"
+    save_path = Path(save_dir) / f"{model_name}_base.nc"
     
     # Overwrite if exists
     if save_path.exists():

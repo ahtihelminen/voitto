@@ -154,8 +154,8 @@ def train_xgboost_model(
     model.fit(X, y)
 
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    exp_name = config.get("experiment_name", "xgb_model")
-    save_path = f"{save_dir}/{exp_name}.json"
+    model_name = config.get("model_name", "xgb_model")
+    save_path = f"{save_dir}/{model_name}.json"
     model.save_model(save_path)
 
     return save_path

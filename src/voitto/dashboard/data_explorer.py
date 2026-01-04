@@ -5,9 +5,9 @@ from sqlmodel import SQLModel, select
 from voitto.database import engine
 from voitto.models import (
     DailyPrediction,
-    Experiment,
     GameOdds,
     GameStats,
+    ModelArtifact,
     PlayerPropOdds,
     PlayerStats,
     TeamStats,
@@ -24,7 +24,7 @@ TABLE_MAP = {
     "Game Odds": GameOdds,
     "Game Stats": GameStats,
     "Team Stats": TeamStats,
-    "Experiments": Experiment,
+    "Model Artifacts": ModelArtifact,
     "Predictions": DailyPrediction,
 }
 

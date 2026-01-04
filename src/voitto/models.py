@@ -1,5 +1,6 @@
+import json
 from datetime import datetime, timezone
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from sqlmodel import Field, SQLModel
 
@@ -165,10 +166,60 @@ class Experiment(SQLModel, table=True):
     # We store the path to the "Base Priors" trace file
     base_model_path: str # e.g. "saved_models/exp_1_base.nc"
 
+
+class ModelArtifact(SQLModel, table=True):
+    """
+    Registry of trained model components (The Parts).
+    Replaces the old 'Experiment' table.
+    """
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, index=True) 
+    
+    # Identity
+    model_type: str      # e.g. "xgboost", "bambi_gaussian", "sklearn_ridge"
+    target_feature: str  # e.g. "usg_pct", "true_shooting", "pace"
+    
+    # Storage
+    artifact_path: str
+    
+    # Config & Metadata (Stored as JSON strings)
+    hyperparameters: str = Field(default="{}")
+    feature_cols: str = Field(default="[]")
+    
+    metrics: str | None = Field(default=None)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    @property
+    def config(self) -> dict[str, Any]:
+        """Helper to get full config as dict"""
+        return {
+            "hyperparameters": json.loads(self.hyperparameters),
+            "features": json.loads(self.feature_cols)
+        }
+
+class PredictionPipeline(SQLModel, table=True):
+    """
+    Defines a recipe for combining models (The Assembly).
+    """
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(unique=True)
+    
+    # References to ModelArtifact IDs
+    # e.g. '{"usage_model_id": 12, "efficiency_model_id": 15, ...}'
+    recipe_config: str 
+    
+    active: bool = Field(default=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
 class DailyPrediction(SQLModel, table=True):
     """Stores the specific prediction for a specific game & model."""
     id: int | None = Field(default=None, primary_key=True)
-    experiment_id: int = Field(foreign_key="experiment.id")
+    model_artifact_id: int = Field(foreign_key="modelartifact.id")
     player_name: str
     game_date: datetime
     

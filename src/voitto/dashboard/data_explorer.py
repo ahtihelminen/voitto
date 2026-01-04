@@ -69,5 +69,5 @@ if search_query and not df.empty:
 st.caption(f"Showing {len(df)} rows")
 st.dataframe(
     df,
-    use_container_width=True,
+    width='stretch',
 )

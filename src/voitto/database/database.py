@@ -4,7 +4,7 @@ from typing import Any
 from sqlmodel import Session, SQLModel, create_engine
 
 # Import all models so SQLModel knows about them when creating tables
-from voitto.models import (  # noqa: F401
+from voitto.database.models import (  # noqa: F401
     GameOdds,
     GameStats,
     PlayerPropOdds,

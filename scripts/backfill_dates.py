@@ -1,7 +1,7 @@
 # backfill_dates.py
 from sqlmodel import Session, create_engine, select, text
 
-from voitto.models import GameOdds, Unified
+from voitto.database.models import GameOdds, Unified
 
 # Update with your DB path
 sqlite_url = "sqlite:///voitto.db"

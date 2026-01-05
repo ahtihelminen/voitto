@@ -6,10 +6,10 @@ import streamlit as st
 from sqlmodel import Session, select
 
 # Internal Imports
-from voitto.database import engine
+from voitto.database.database import engine
 from voitto.engine.train_bayes import train_base_model
 from voitto.engine.train_xgb import train_xgboost_model
-from voitto.models import ModelArtifact, Unified
+from voitto.database.models import ModelArtifact, Unified
 
 # --- UI Config ---
 st.set_page_config(

@@ -1,7 +1,7 @@
 import sys
 
-import voitto.models as models
-from voitto.database import engine
+import voitto.database.models as models
+from voitto.database.database import engine
 
 
 def main() -> None:

@@ -8,9 +8,9 @@ import requests
 from dotenv import load_dotenv
 from sqlmodel import Session, select
 
-from voitto.database import engine
-from voitto.models import GameOdds, PlayerPropOdds
-from voitto.teams import NAME_TO_ABBREVIATION_DICT
+from voitto.database.database import engine
+from voitto.database.models import GameOdds, PlayerPropOdds
+from voitto.database.teams import NAME_TO_ABBREVIATION_DICT
 
 # --- Configuration ---
 load_dotenv()

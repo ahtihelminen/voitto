@@ -2,8 +2,8 @@ import pandas as pd
 import streamlit as st
 from sqlmodel import SQLModel, select
 
-from voitto.database import engine
-from voitto.models import (
+from voitto.database.database import engine
+from voitto.database.models import (
     DailyPrediction,
     GameOdds,
     GameStats,

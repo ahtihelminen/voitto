@@ -3,7 +3,7 @@ from pathlib import Path
 import streamlit as st
 from sqlmodel import Session, create_engine, select, text
 
-from voitto.models import ModelArtifact
+from voitto.database.models import ModelArtifact
 
 # --- Constants ---
 SQLITE_URL = "sqlite:///voitto.db"

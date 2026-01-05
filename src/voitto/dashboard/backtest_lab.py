@@ -7,7 +7,7 @@ from sqlmodel import Session, create_engine, select
 
 from voitto.engine.backtest import run_backtest
 from voitto.engine.train_xgb import run_xgboost_backtest
-from voitto.models import ModelArtifact, Unified
+from voitto.database.models import ModelArtifact, Unified
 
 SQLITE_URL = "sqlite:///voitto.db"
 engine = create_engine(SQLITE_URL)

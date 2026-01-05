@@ -4,7 +4,7 @@ import pandas as pd
 from nba_api.stats.endpoints import playergamelogs
 from sqlmodel import Session, select
 
-from voitto.models import GameStats, PlayerStats
+from voitto.database.models import GameStats, PlayerStats
 
 
 def fetch_season_logs(season_str: str) -> pd.DataFrame:

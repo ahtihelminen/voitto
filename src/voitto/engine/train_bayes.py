@@ -5,21 +5,35 @@ import bambi as bmb
 import pandas as pd
 
 
-# Ensure we use the shared logic for creating formulas/families
-def get_model_config(model_type: str) -> tuple[str, str]:
-    """Returns (formula, family) based on model type."""
-    if model_type == "Gaussian Residual":
+def get_model_config(model_type: str, target_col: str) -> tuple[str, str]:
+    """
+    Returns (formula, family) based on model type and target.
+    """
+    # 1. Gaussian Residual (Legacy Betting Model)
+    if model_type == "Gaussian Residual" and target_col == "points":
         return (
             "target ~ 1 + (1 | player_name) + (1 | opponent_team)",
-            "gaussian"
+            "gaussian",
         )
+
+    # 2. Generic Gaussian (For Usage, Minutes, etc.)
+    # If the user selected 'Gaussian Residual' but target is NOT points,
+    # we treat it as a standard Normal model on the raw value.
+    if "Gaussian" in model_type:
+        return (f"{target_col} ~ 1 + (1 | player_name)", "gaussian")
+
+    # 3. Poisson (For Counts like Assists, Rebounds, or raw Points)
     if model_type == "Poisson Base":
+        # If we have a market line, use it as a base regressor?
+        # For simplicity, we stick to intercept + player effects for components.
         return (
-            "target ~ market_line + (1 | player_name) + (1 | opponent_team)",
-            "poisson"
+            f"{target_col} ~ 1 + (1 | player_name) + (1 | opponent_team)",
+            "poisson",
         )
-    msg = f"Unknown model type: {model_type}"
+
+    msg = f"Unknown model config: {model_type} for target {target_col}"
     raise ValueError(msg)
+
 
 def train_base_model(
     training_data: pd.DataFrame,
@@ -27,47 +41,56 @@ def train_base_model(
     save_dir: str = "saved_models",
 ) -> Path:
     """
-    Trains a base model on historical data and saves the trace to disk.
-    
-    Args:
-        training_data: DataFrame containing historical games (23-24, etc.)
-        config: Dict containing 'model_type' and 'model_name'
-        save_dir: Directory to save the .nc file
-    
-    Returns:
-        str: Path to the saved NetCDF file.
+    Trains a Bayesian model component.
     """
     model_type = str(config["model_type"])
-    model_name = str(config.get("model_name", "model"))
-    
+    experiment_name = str(config.get("experiment_name", "experiment"))
+    target = str(config.get("target", "points"))
+
     # 1. Prepare Data
     training_df = training_data.copy()
-    formula, family = get_model_config(model_type)
-    
-    if model_type == "Gaussian Residual":
+
+    # Determine Formula
+    formula, family = get_model_config(model_type, target)
+
+    # Special Prep for Residuals
+    # If predicting points residuals, we construct the 'target' column
+    if model_type == "Gaussian Residual" and target == "points":
+        if "market_line" not in training_df.columns:
+            msg = "Gaussian Residual (Points) requires 'market_line' column."
+            raise ValueError(
+                msg
+            )
+
         training_df["target"] = (
             training_df["points"] - training_df["market_line"]
         )
     else:
-        training_df["target"] = training_df["points"]
+        # Ensure target exists
+        if target not in training_df.columns:
+            msg = f"Target column '{target}' not found in training data."
+            raise ValueError(
+                msg
+            )
 
-    print(f"🏗 Training Base Model ({model_type}) on {len(training_df)} rows...")
+    print(
+        f"Training ({model_type}) on target '{target}' with formula: {formula}"
+    )
 
     # 2. Define & Fit
     model = bmb.Model(formula, data=training_df, family=family, dropna=True)
-    
-    # We use higher draws for the base model to ensure robust priors
-    idata = model.fit(draws=1000, tune=1000, chains=2, progressbar=True)
-    
+
+    # Fit
+    idata = model.fit(draws=1000, tune=500, chains=2, progressbar=True)
+
     # 3. Save Trace
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    save_path = Path(save_dir) / f"{model_name}_base.nc"
-    
-    # Overwrite if exists
+    save_path = Path(save_dir) / f"{experiment_name}_base.nc"
+
     if save_path.exists():
         save_path.unlink()
-        
+
     az.to_netcdf(idata, save_path)
     print(f"✅ Model saved to: {save_path}")
-    
+
     return save_path

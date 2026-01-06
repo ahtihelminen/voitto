@@ -6,21 +6,50 @@ import pandas as pd
 import xgboost as xgb
 from scipy.stats import norm
 
-from voitto.engine.utils import shifted_rolling_mean
+from voitto.features.registry import get_feature_processor
+from voitto.features.utils import shifted_rolling_mean
 
-# Default Features (Fallback)
-DEFAULT_FEATURES = [
-    "market_line",
-    "player_L5_pts",
-    "player_season_pts",
-    "player_L5_mins",
-    "player_L5_fga",
-    "team_L5_pace",
-    "team_rest_days",
-    "opp_L5_def_rating",
-    "opp_season_def_rating",
-    "opp_L5_pace",
-]
+
+def train_xgboost_model(
+    training_data: pd.DataFrame, config: dict, save_dir: str = "saved_models"
+) -> str:
+    target = config.get("target")
+    features = config.get("features", [])
+
+    feature_processor = get_feature_processor(features)
+
+    modified_data = feature_processor(training_data.copy())
+
+    X = modified_data[features]
+    y = modified_data[target]
+
+    if X.empty:
+        msg = (
+            "Not enough history to generate rolling "
+            f"features for target '{target}'."
+        )
+        raise ValueError(
+            msg
+        )
+
+    # 3. Fit
+    params = {
+        "objective": "reg:squarederror",
+        "n_estimators": 200,
+        "max_depth": 4,
+        "learning_rate": config.get("learning_rate", 0.05),
+    }
+
+    model = xgb.XGBRegressor(**params)
+    model.fit(X, y)
+
+    # 4. Save
+    Path(save_dir).mkdir(parents=True, exist_ok=True)
+    exp_name = config.get("experiment_name", "xgboost_model")
+    save_path = f"{save_dir}/{exp_name}.json"
+    model.save_model(save_path)
+
+    return save_path
 
 
 def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -99,85 +128,18 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def prepare_data(
-    df: pd.DataFrame,
-    target_col: str,
-    feature_cols: list[str],
-    is_training: bool = True,
-) -> tuple[pd.DataFrame, pd.Series | None, pd.DataFrame]:
-    # 1. Feature Engineering
-    df_eng = add_rolling_features(df.copy())
-
-    # 2. Filter rows where we have all features
-    df_clean = df_eng.dropna(subset=feature_cols).copy()
-
-    # Drop rows where target is missing if training
-    if is_training:
-        df_clean = df_clean.dropna(subset=[target_col])
-
-    # 3. Construct X and y
-    X = df_clean[feature_cols]
-
-    y = None
-    if is_training:
-        # Special logic: If predicting points for betting, we often predict the 
-        # residual.
-        # But for generic components (FGA, Minutes), we predict the raw value.
-        # We assume 'target_col' is the raw column.
-
-        # Heuristic: If target is 'points' AND we have 'market_line', predict
-        # residual.
-        # Otherwise, predict raw.
-        if target_col == "points" and "market_line" in df_clean.columns:
-            y = df_clean[target_col] - df_clean["market_line"]
-        else:
-            y = df_clean[target_col]
-
-    return X, y, df_clean
-
-
-def train_xgboost_model(
-    training_data: pd.DataFrame, config: dict, save_dir: str = "saved_models"
-) -> str:
-    # 1. Extract Config
-    target = config.get("target", "points")
-    features = config.get("features", DEFAULT_FEATURES)
-    exp_name = config.get("experiment_name", "xgb_model")
-
-    # 2. Prepare
-    X, y, _ = prepare_data(
-        training_data,
-        target_col=target,
-        feature_cols=features,
-        is_training=True,
-    )
-
-    if X.empty:
-        msg = (
-            "Not enough history to generate rolling "
-            f"features for target '{target}'."
-        )
-        raise ValueError(
-            msg
-        )
-
-    # 3. Fit
-    params = {
-        "objective": "reg:squarederror",
-        "n_estimators": 200,
-        "max_depth": 4,
-        "learning_rate": config.get("learning_rate", 0.05),
-    }
-
-    model = xgb.XGBRegressor(**params)
-    model.fit(X, y)
-
-    # 4. Save
-    Path(save_dir).mkdir(parents=True, exist_ok=True)
-    save_path = f"{save_dir}/{exp_name}.json"
-    model.save_model(save_path)
-
-    return save_path
+DEFAULT_FEATURES = [
+    "market_line",
+    "player_L5_pts",
+    "player_season_pts",
+    "player_L5_mins",
+    "player_L5_fga",
+    "team_L5_pace",
+    "team_rest_days",
+    "opp_L5_def_rating",
+    "opp_season_def_rating",
+    "opp_L5_pace",
+]
 
 def run_xgboost_backtest(
     df_full: pd.DataFrame,
@@ -188,7 +150,6 @@ def run_xgboost_backtest(
     retrain_days = config.get("retrain_days", 7)
 
     target = config.get("target", "points")
-
 
     # Global FE
     df_eng = add_rolling_features(df_full.copy())

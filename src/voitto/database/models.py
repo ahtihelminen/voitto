@@ -155,8 +155,7 @@ class Unified(SQLModel, table=True):
 
 class ModelArtifact(SQLModel, table=True):
     """
-    Registry of trained model components (The Parts).
-    Replaces the old 'Experiment' table.
+    Registry of trained model components.
     """
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True, index=True) 
@@ -171,7 +170,8 @@ class ModelArtifact(SQLModel, table=True):
     # Config & Metadata (Stored as JSON strings)
     hyperparameters: str = Field(default="{}")
     feature_cols: str = Field(default="[]")
-    
+    filters: str = Field(default="{}")
+
     metrics: str | None = Field(default=None)
     
     created_at: datetime = Field(

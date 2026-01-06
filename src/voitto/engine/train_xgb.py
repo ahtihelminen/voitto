@@ -6,7 +6,7 @@ import pandas as pd
 import xgboost as xgb
 from scipy.stats import norm
 
-from voitto.engine.utils import shifted_rolling_mean
+from voitto.features.utils import shifted_rolling_mean
 
 # Default Features (Fallback)
 DEFAULT_FEATURES = [

@@ -8,3 +8,5 @@ explore_db.ipynb
 data/
 
 saved_models/
+
+.DS_Store

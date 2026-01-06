@@ -7,4 +7,3 @@ def shifted_rolling_mean(
     window: int
 ) -> pd.Series:
     return x.shift(shift).rolling(window).mean()
-

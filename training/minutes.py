@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 
 from voitto.database.database import engine
 from voitto.database.models import GameStats, Unified
-from voitto.engine.utils import shifted_rolling_mean
+from voitto.features.utils import shifted_rolling_mean
 
 # --- Configuration ---
 TARGET = "minutes"

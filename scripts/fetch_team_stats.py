@@ -2,8 +2,8 @@ import pandas as pd
 from nba_api.stats.endpoints import leaguegamefinder
 from sqlmodel import Session
 
-from voitto.database import engine
-from voitto.models import TeamStats
+from voitto.database.database import engine
+from voitto.database.models import TeamStats
 
 
 def calculate_advanced_stats(season: str = "2023-24") -> pd.DataFrame:

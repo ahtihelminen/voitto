@@ -2,7 +2,7 @@ import time
 
 from sqlmodel import Session, create_engine
 
-from voitto.stats_utils import (
+from voitto.database.stats_utils import (
     fetch_season_logs,
     save_nba_games_to_db,
     save_stats_to_db,

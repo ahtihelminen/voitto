@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from sqlmodel import Session, create_engine, select
 
-from voitto.models import (
+from voitto.database.models import (
     GameOdds,
     GameStats,
     PlayerPropOdds,

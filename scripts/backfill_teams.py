@@ -1,7 +1,7 @@
 # backfill_teams.py
 from sqlmodel import Session, create_engine, select, text
 
-from voitto.models import GameStats, PlayerStats, Unified
+from voitto.database.models import GameStats, PlayerStats, Unified
 
 # Update with your actual DB path
 sqlite_url = "sqlite:///voitto.db"

@@ -8,8 +8,8 @@ from requests.exceptions import RequestException
 from sqlmodel import Session, desc, select
 
 from voitto.database import create_db_and_tables, engine
-from voitto.models import GameOdds, PlayerPropOdds
-from voitto.teams import NAME_TO_ABBREVIATION_DICT
+from voitto.database.models import GameOdds, PlayerPropOdds
+from voitto.database.teams import NAME_TO_ABBREVIATION_DICT
 
 # 1. Setup
 load_dotenv()

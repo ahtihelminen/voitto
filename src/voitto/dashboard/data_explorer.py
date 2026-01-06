@@ -2,12 +2,12 @@ import pandas as pd
 import streamlit as st
 from sqlmodel import SQLModel, select
 
-from voitto.database import engine
-from voitto.models import (
+from voitto.database.database import engine
+from voitto.database.models import (
     DailyPrediction,
-    Experiment,
     GameOdds,
     GameStats,
+    ModelArtifact,
     PlayerPropOdds,
     PlayerStats,
     TeamStats,
@@ -24,7 +24,7 @@ TABLE_MAP = {
     "Game Odds": GameOdds,
     "Game Stats": GameStats,
     "Team Stats": TeamStats,
-    "Experiments": Experiment,
+    "Model Artifacts": ModelArtifact,
     "Predictions": DailyPrediction,
 }
 

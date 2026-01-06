@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -5,30 +7,34 @@ from sqlmodel import Session, create_engine, select
 
 from voitto.engine.backtest import run_backtest
 from voitto.engine.train_xgb import run_xgboost_backtest
-from voitto.models import Experiment, Unified
+from voitto.database.models import ModelArtifact, Unified
 
 SQLITE_URL = "sqlite:///voitto.db"
 engine = create_engine(SQLITE_URL)
 
 st.title("📊 Backtest Lab")
 
-# --- 1. Select Experiment ---
+# --- 1. Select Model ---
 with Session(engine) as session:
-    experiments = session.exec(select(Experiment)).all()
+    models = session.exec(select(ModelArtifact)).all()
 
-if not experiments:
+if not models:
     st.warning("No trained models found. Go to 'Model Forge' first.")
     st.stop()
 
-exp_names = [e.name for e in experiments]
-selected_exp_name = st.selectbox("Select Base Model", exp_names)
-selected_exp = next(e for e in experiments if e.name == selected_exp_name)
+model_names = [m.name for m in models]
+selected_model_name = st.selectbox("Select Base Model", model_names)
+selected_model = next(m for m in models if m.name == selected_model_name)
+
+# Parse hyperparameters for training cutoff
+hyperparams = json.loads(selected_model.hyperparameters)
+training_cutoff = hyperparams.get("training_cutoff", "2025-10-01")
 
 # --- 2. Simulation Config ---
 col1, col2, col3 = st.columns(3)
 with col1:
     test_start = st.date_input(
-        "Simulation Start Date", value=selected_exp.training_cutoff
+        "Simulation Start Date", value=pd.to_datetime(training_cutoff).date()
     )
 with col2:
     recency = st.slider(
@@ -72,12 +78,12 @@ if st.button("🚀 Run Walk-Forward Simulation", type="primary"):
     config = {
         "start_date": "2023-10-01",  # Unused in loop but good for metadata
         "test_start_date": test_start,
-        "model_type": selected_exp.model_type,
+        "model_type": selected_model.model_type,
         "recency_weight": recency,
         "retrain_days": retrain_days,
     }
 
-    if "XGBoost" in selected_exp.model_type:
+    if "xgboost" in selected_model.model_type.lower():
         results_df = run_xgboost_backtest(df_full, config, update_ui)
     else:
         results_df = run_backtest(df_full, config, update_ui)

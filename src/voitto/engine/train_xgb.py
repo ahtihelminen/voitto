@@ -8,36 +8,31 @@ from scipy.stats import norm
 
 from voitto.engine.utils import shifted_rolling_mean
 
-# --- 1. UPDATED FEATURE LIST (No Post-Game Stats) ---
-FEATURES = [
+# Default Features (Fallback)
+DEFAULT_FEATURES = [
     "market_line",
-    # Player Context
     "player_L5_pts",
     "player_season_pts",
     "player_L5_mins",
     "player_L5_fga",
-    # Team Context (Rolling)
-    "team_L5_pace",  # Replaces raw 'team_pace'
-    "team_rest_days",  # Safe (Schedule based)
-    # Opponent Context (Rolling)
-    "opp_L5_def_rating",  # Replaces raw 'opp_def_rating'
+    "team_L5_pace",
+    "team_rest_days",
+    "opp_L5_def_rating",
     "opp_season_def_rating",
     "opp_L5_pace",
 ]
-
-TARGET = "points"
 
 
 def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates historical stats for Players AND Teams.
-    Crucial: Uses .shift(1) to ensure we only use PAST data.
     """
     df = df.sort_values("game_date")
 
     # --- A. Player Rolling Stats ---
-    # Group by Player -> Shift -> Roll
     player_grouped = df.groupby("player_name")
+
+    # Standard Rolling
     df["player_L5_pts"] = player_grouped["points"].transform(
         shifted_rolling_mean, shift=1, window=5
     )
@@ -52,11 +47,6 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # --- B. Team Rolling Stats ---
-    # Challenge: Teams appear multiple times per game (once per player).
-    # We must isolate unique Team-Game rows to calculate rolling stats
-    # correctly.
-
-    # 1. My Team Stats (Pace, eFG)
     team_games = (
         df[["game_date", "player_team", "team_pace", "team_efg_pct"]]
         .drop_duplicates()
@@ -68,7 +58,6 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
         shifted_rolling_mean, shift=1, window=5
     )
 
-    # Merge back to main DF
     df = pd.merge(
         df,
         team_games[["game_date", "player_team", "team_L5_pace"]],
@@ -76,9 +65,7 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
         how="left",
     )
 
-    # 2. Opponent Stats (Def Rating, Pace)
-    # Note: 'opp_def_rating' in Unified is the rating of the TEAM listed
-    # in 'opponent_team'.
+    # --- C. Opponent Stats ---
     opp_games = (
         df[["game_date", "opponent_team", "opp_def_rating", "opp_pace"]]
         .drop_duplicates()
@@ -96,7 +83,6 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
         shifted_rolling_mean, shift=1, window=5
     )
 
-    # Merge back
     return pd.merge(
         df,
         opp_games[
@@ -115,21 +101,37 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def prepare_data(
     df: pd.DataFrame,
+    target_col: str,
+    feature_cols: list[str],
     is_training: bool = True,
 ) -> tuple[pd.DataFrame, pd.Series | None, pd.DataFrame]:
     # 1. Feature Engineering
     df_eng = add_rolling_features(df.copy())
 
-    # 2. Filter rows where we have all features (drops early season games due
-    #    to rolling window)
-    df_clean = df_eng.dropna(subset=FEATURES).copy()
+    # 2. Filter rows where we have all features
+    df_clean = df_eng.dropna(subset=feature_cols).copy()
+
+    # Drop rows where target is missing if training
+    if is_training:
+        df_clean = df_clean.dropna(subset=[target_col])
 
     # 3. Construct X and y
-    X = df_clean[FEATURES]
+    X = df_clean[feature_cols]
 
     y = None
     if is_training:
-        y = df_clean[TARGET] - df_clean["market_line"]
+        # Special logic: If predicting points for betting, we often predict the 
+        # residual.
+        # But for generic components (FGA, Minutes), we predict the raw value.
+        # We assume 'target_col' is the raw column.
+
+        # Heuristic: If target is 'points' AND we have 'market_line', predict
+        # residual.
+        # Otherwise, predict raw.
+        if target_col == "points" and "market_line" in df_clean.columns:
+            y = df_clean[target_col] - df_clean["market_line"]
+        else:
+            y = df_clean[target_col]
 
     return X, y, df_clean
 
@@ -137,29 +139,45 @@ def prepare_data(
 def train_xgboost_model(
     training_data: pd.DataFrame, config: dict, save_dir: str = "saved_models"
 ) -> str:
-    X, y, _ = prepare_data(training_data, is_training=True)
+    # 1. Extract Config
+    target = config.get("target", "points")
+    features = config.get("features", DEFAULT_FEATURES)
+    exp_name = config.get("experiment_name", "xgb_model")
+
+    # 2. Prepare
+    X, y, _ = prepare_data(
+        training_data,
+        target_col=target,
+        feature_cols=features,
+        is_training=True,
+    )
 
     if X.empty:
-        msg = "Not enough history to generate rolling features."
-        raise ValueError(msg)
+        msg = (
+            "Not enough history to generate rolling "
+            f"features for target '{target}'."
+        )
+        raise ValueError(
+            msg
+        )
 
+    # 3. Fit
     params = {
         "objective": "reg:squarederror",
         "n_estimators": 200,
         "max_depth": 4,
-        "learning_rate": 0.05,
+        "learning_rate": config.get("learning_rate", 0.05),
     }
 
     model = xgb.XGBRegressor(**params)
     model.fit(X, y)
 
+    # 4. Save
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    exp_name = config.get("experiment_name", "xgb_model")
     save_path = f"{save_dir}/{exp_name}.json"
     model.save_model(save_path)
 
     return save_path
-
 
 def run_xgboost_backtest(
     df_full: pd.DataFrame,
@@ -168,6 +186,9 @@ def run_xgboost_backtest(
 ) -> pd.DataFrame:
     test_start = pd.to_datetime(config["test_start_date"], utc=True)
     retrain_days = config.get("retrain_days", 7)
+
+    target = config.get("target", "points")
+
 
     # Global FE
     df_eng = add_rolling_features(df_full.copy())
@@ -200,10 +221,10 @@ def run_xgboost_backtest(
         )
 
         if should_retrain:
-            train_subset = current_train.dropna(subset=FEATURES)
+            train_subset = current_train.dropna(subset=DEFAULT_FEATURES)
             if len(train_subset) > 100:
-                X_train = train_subset[FEATURES]
-                y_train = train_subset[TARGET] - train_subset["market_line"]
+                X_train = train_subset[DEFAULT_FEATURES]
+                y_train = train_subset[target] - train_subset["market_line"]
 
                 model = xgb.XGBRegressor(
                     n_estimators=200, max_depth=4, learning_rate=0.05
@@ -217,11 +238,11 @@ def run_xgboost_backtest(
 
         # Predict
         day_games = test_df[test_df["game_date"] == date].copy()
-        valid_mask = day_games[FEATURES].notna().all(axis=1)
+        valid_mask = day_games[DEFAULT_FEATURES].notna().all(axis=1)
         valid_rows = day_games[valid_mask].copy()
 
         if not valid_rows.empty and model:
-            X_test = valid_rows[FEATURES]
+            X_test = valid_rows[DEFAULT_FEATURES]
             pred_residuals = model.predict(X_test)
 
             valid_rows["pred_points"] = (
@@ -265,3 +286,4 @@ def run_xgboost_backtest(
         return pd.DataFrame()
 
     return pd.concat(daily_results)
+

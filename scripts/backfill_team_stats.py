@@ -3,10 +3,8 @@ import logging
 from nba_api.stats.static import teams
 from sqlmodel import Session, select, text
 
-from voitto.database import engine
-
-# Adjust these imports to match your project structure
-from voitto.models import TeamStats, Unified
+from voitto.database.database import engine
+from voitto.database.models import TeamStats, Unified
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)

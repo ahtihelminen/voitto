@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 import pandas as pd
@@ -6,7 +7,7 @@ from sqlmodel import Session, create_engine, select
 
 from voitto.engine.bet import size_bets
 from voitto.engine.predict import predict_daily
-from voitto.models import Experiment, Unified
+from voitto.database.models import ModelArtifact, Unified
 
 SQLITE_URL = "sqlite:///voitto.db"
 engine = create_engine(SQLITE_URL)
@@ -27,19 +28,20 @@ min_edge = st.sidebar.slider(
 
 # --- 1. Select Model ---
 with Session(engine) as session:
-    experiments = session.exec(select(Experiment)).all()
+    models = session.exec(select(ModelArtifact)).all()
 
-if not experiments:
+if not models:
     st.error("No models available.")
     st.stop()
 
-experiment_names = [experiment.name for experiment in experiments]
-selected_experiment_name = st.selectbox("Select Active Model", experiment_names)
-selected_experiment = next(
-    experiment for experiment in experiments if (
-        experiment.name == selected_experiment_name
-    )
+model_names = [m.name for m in models]
+selected_model_name = st.selectbox("Select Active Model", model_names)
+selected_model = next(
+    m for m in models if m.name == selected_model_name
 )
+
+# Parse hyperparameters
+hyperparams = json.loads(selected_model.hyperparameters)
 
 # --- 2. Data Prep ---
 # In a real app, 'upcoming_games' would come from an API (NBA API)
@@ -51,9 +53,10 @@ if st.button("🎲 Generate Bets", type="primary"):
     with st.spinner("Crunching numbers..."):
         with Session(engine) as session:
             # A. Get Training Data (Current Season up to yesterday)
-            # We define current season start based on the experiment cutoff
+            # We define current season start based on the model hyperparams
             # or a fixed date
-            season_start = selected_experiment.training_cutoff
+            training_cutoff = hyperparams.get("training_cutoff", "2025-10-01")
+            season_start = pd.to_datetime(training_cutoff)
 
             hist_stmt = select(Unified).where(
                 Unified.market_key == "player_points",
@@ -94,14 +97,14 @@ if st.button("🎲 Generate Bets", type="primary"):
 
         # C. Predict
         config = {
-            "model_type": selected_experiment.model_type,
-            "recency_weight": selected_experiment.recency_weight,
+            "model_type": selected_model.model_type,
+            "recency_weight": hyperparams.get("recency_weight", 2.0),
         }
 
         preds_df = predict_daily(
             current_season_data=df_train,
             upcoming_games=df_target,
-            base_model_path=selected_experiment.base_model_path,
+            base_model_path=selected_model.artifact_path,
             config=config,
         )
 

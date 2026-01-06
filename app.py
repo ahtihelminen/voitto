@@ -20,29 +20,17 @@ data_explorer = st.Page(
     title="Data Explorer",
     icon="📂",
 )
-model_forge = st.Page(
-    "src/voitto/dashboard/model_forge.py",
-    title="Model Forge",
-    icon="🧪",
-)
-backtest_lab = st.Page(
-    "src/voitto/dashboard/backtest_lab.py",
-    title="Backtest Lab",
-    icon="📊",
-)
-live_betting = st.Page(
-    "src/voitto/dashboard/live_betting.py",
-    title="Live Betting",
-    icon="💰",
+training = st.Page(
+    "src/voitto/dashboard/training.py",
+    title="Model Training",
+    icon="🔨",
 )
 
 page = st.navigation(
     [
         home,
         data_explorer,
-        model_forge,
-        backtest_lab,
-        live_betting,
+        training,
     ]
 )
 page.run()

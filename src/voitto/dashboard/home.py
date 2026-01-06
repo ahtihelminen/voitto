@@ -10,7 +10,7 @@ SQLITE_URL = "sqlite:///voitto.db"
 MODELS_DIR = "saved_models"
 
 # --- UI Header ---
-st.title("🏀 Voitto Model Lab")
+st.title("Voitto Model Lab")
 st.markdown("### Sports Prediction & Betting Platform")
 st.divider()
 
@@ -40,17 +40,12 @@ with col1:
 with col2:
     st.subheader("🚀 Workflow")
     st.markdown("""
-    **1. 🧪 Model Forge**
-    Define new models and train components.
+    **1. 🔍 Data Explorer**
+    Browse and analyze historical player/game data.
+    
+    **2. 🔨 Model Training**
+    Train XGBoost or Bayesian models on historical data.
     *Output: Saved model artifact*
-    
-    **2. 📊 Backtest Lab**
-    Run walk-forward simulations on saved models.
-    *Output: Performance metrics & Kelly growth*
-    
-    **3. 💰 Live War Room**
-    Generate today's predictions using the best model.
-    *Output: Actionable betting slip*
     """)
 
 with col3:

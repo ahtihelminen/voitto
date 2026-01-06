@@ -37,7 +37,7 @@ def get_model_config(model_type: str, target_col: str) -> tuple[str, str]:
 
 def train_base_model(
     training_data: pd.DataFrame,
-    config: dict[str, str | float],
+    config: dict[str, str | float | int],
     save_dir: str = "saved_models",
 ) -> Path:
     """

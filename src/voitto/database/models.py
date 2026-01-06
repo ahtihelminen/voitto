@@ -170,7 +170,8 @@ class ModelArtifact(SQLModel, table=True):
     # Config & Metadata (Stored as JSON strings)
     hyperparameters: str = Field(default="{}")
     feature_cols: str = Field(default="[]")
-    
+    filters: str = Field(default="{}")
+
     metrics: str | None = Field(default=None)
     
     created_at: datetime = Field(

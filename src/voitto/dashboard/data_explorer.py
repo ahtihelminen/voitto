@@ -33,29 +33,29 @@ model_class = TABLE_MAP[table_name]
 
 # --- 2. Data Loading ---
 # We limit to 5000 rows to prevent memory issues during exploration
-limit = st.number_input(
+row_limit = st.number_input(
     "Row Limit", min_value=100, max_value=50000, value=2000, step=100
 )
 
 
 @st.cache_data(ttl=60)  # Cache data for 1 minute
 def load_data(model: type[SQLModel], row_limit: int) -> pd.DataFrame:
-    with engine.connect() as conn:
+    with engine.connect() as connection:
         query = select(model).limit(row_limit)
-        return pd.read_sql(query, conn)
+        return pd.read_sql(query, connection)
 
 
-df = load_data(model_class, limit)
+table = load_data(model_class, row_limit)
 
 # --- 3. Global Search Filter ---
 search_query = st.text_input("Global Search", placeholder="Type to filter...")
 
-if search_query and not df.empty:
+if search_query and not table.empty:
     # Filter rows where any string column contains the search term
-    string_cols = df.select_dtypes(include=["object", "string"]).columns
+    string_cols = table.select_dtypes(include=["object", "string"]).columns
     if len(string_cols) > 0:
         mask = (
-            df[string_cols]
+            table[string_cols]
             .apply(
                 lambda x: x.astype(str).str.contains(
                     search_query, case=False, na=False
@@ -63,11 +63,11 @@ if search_query and not df.empty:
             )
             .any(axis=1)
         )
-        df = df[mask]
+        table = table[mask]
 
 # --- 4. Display ---
-st.caption(f"Showing {len(df)} rows")
+st.caption(f"Showing {len(table)} rows")
 st.dataframe(
-    df,
+    table,
     width='stretch',
 )

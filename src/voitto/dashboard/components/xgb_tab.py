@@ -1,4 +1,5 @@
 """XGBoost training tab component."""
+
 import json
 from datetime import date
 
@@ -9,6 +10,7 @@ from sqlmodel import Session, select
 from voitto.database.database import engine
 from voitto.database.models import ModelArtifact, Unified
 from voitto.engine.train_xgb import train_xgboost_model
+from voitto.features.registry import FEATURE_REGISTRY
 
 
 def fetch_training_data(cutoff_date: date) -> pd.DataFrame:
@@ -24,7 +26,10 @@ def fetch_training_data(cutoff_date: date) -> pd.DataFrame:
 
 def render_xgb_training() -> None:
     """Render the XGBoost training form and handle submission."""
-    
+
+    # Get available features from registry
+    available_features = sorted(FEATURE_REGISTRY.keys())
+
     with st.form("xgb_training_form"):
         col1, col2 = st.columns(2)
 
@@ -56,12 +61,29 @@ def render_xgb_training() -> None:
             )
             n_estimators = st.number_input(
                 "Number of Estimators",
-                value=100, min_value=10, max_value=1000, step=10
+                value=100,
+                min_value=10,
+                max_value=1000,
+                step=10,
             )
 
             notes = st.text_area(
                 "Notes", placeholder="Testing new rolling window features..."
             )
+
+        # Feature selection section (full width)
+        st.subheader("Feature Selection")
+        selected_features = st.multiselect(
+            "Select Features for Training",
+            options=available_features,
+            default=available_features[:10]
+            if len(available_features) >= 10
+            else available_features,
+            help=(f"Choose from {len(available_features)} available features. "
+                  f"Default shows first 10."),
+        )
+
+        st.caption(f"Selected {len(selected_features)} feature(s)")
 
         submitted = st.form_submit_button("Train XGBoost Model", type="primary")
 
@@ -74,6 +96,7 @@ def render_xgb_training() -> None:
             max_depth=max_depth,
             n_estimators=n_estimators,
             notes=notes,
+            selected_features=selected_features,
         )
 
 
@@ -85,10 +108,15 @@ def _handle_xgb_training(
     max_depth: int,
     n_estimators: int,
     notes: str,
+    selected_features: list[str],
 ) -> None:
     """Execute XGBoost training pipeline."""
     if not model_name:
         st.error("⚠️ Please name your model.")
+        return
+
+    if not selected_features:
+        st.error("⚠️ Please select at least one feature for training.")
         return
 
     # Check for duplicate name
@@ -114,7 +142,7 @@ def _handle_xgb_training(
     status.write(f"Loaded {len(df_history)} rows of history.")
 
     # Build config
-    config: dict[str, str | float | int] = {
+    config: dict[str, str | float | int | list[str]] = {
         "model_name": model_name,
         "model_type": "XGBoost",
         "target": target_feature,
@@ -122,10 +150,14 @@ def _handle_xgb_training(
         "learning_rate": learning_rate,
         "max_depth": max_depth,
         "n_estimators": n_estimators,
+        "features": selected_features,
     }
 
     # Train
-    status.write(f"Training on target: '{target_feature}'...")
+    status.write(
+        f"Training on target: '{target_feature}' with {len(selected_features)} "
+        f"features..."
+    )
     save_path = train_xgboost_model(df_history, config, save_dir="saved_models")
 
     # Register artifact
@@ -144,7 +176,7 @@ def _handle_xgb_training(
             target_feature=target_feature,
             artifact_path=str(save_path),
             hyperparameters=json.dumps(hyperparam_dict),
-            feature_cols=json.dumps([]),
+            feature_cols=json.dumps(selected_features),
             metrics=json.dumps({"notes": notes}) if notes else None,
         )
         session.add(new_artifact)

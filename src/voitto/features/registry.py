@@ -1,7 +1,10 @@
 from collections.abc import Callable
 
 import pandas as pd
+from sqlmodel import Session, select
 
+from voitto.database.database import engine
+from voitto.database.models import GameOdds
 from voitto.features.utils import (
     get_mean_feature_last_n_games,
     shifted_rolling_mean,
@@ -311,7 +314,25 @@ def calc_game_imbalance(unified: pd.DataFrame) -> pd.Series:
 @register_feature("is_home")
 def calc_is_home(unified: pd.DataFrame) -> pd.Series:
     """Binary flag: 1 if player is on home team, 0 otherwise."""
-    return (unified["player_team"] == unified["game_home_team"]).astype(int)
+    # Fetch home team information from GameOdds table
+    game_ids = unified["odds_game_id"].unique().tolist()
+    
+    with Session(engine) as session:
+        statement = select(GameOdds.id, GameOdds.home_team).where(
+            GameOdds.id in game_ids
+        )
+        results = session.exec(statement).all()
+        game_home_map = dict(results)
+    
+    # Map game_id to home_team and compare with player_team
+    unified_temp = unified.copy()
+    unified_temp["game_home_team"] = unified_temp["odds_game_id"].map(
+        game_home_map
+    )
+    
+    return (
+        unified_temp["player_team"] == unified_temp["game_home_team"]
+    ).astype(int)
 
 
 @register_feature("team_rest_days")

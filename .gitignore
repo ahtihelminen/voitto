@@ -10,3 +10,5 @@ figures/
 saved_models/
 
 .DS_Store
+
+.databricks
